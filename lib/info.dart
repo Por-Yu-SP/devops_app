@@ -1,5 +1,6 @@
 // ignore_for_file: camel_case_types, non_constant_identifier_names
 
+import 'package:devops_app/scanner.dart';
 import 'package:devops_app/signIn.dart';
 import 'package:flutter/material.dart';
 import 'service.dart';
@@ -43,6 +44,17 @@ class _infoState extends State<info> {
     }
   }
 
+  void scan() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const Scanner()),
+    );
+
+    if (result != null) {
+      admcontrol.text = result;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,6 +82,12 @@ class _infoState extends State<info> {
                 child: TextField(
                   controller: admcontrol,
                   decoration: InputDecoration(
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        scan();
+                      },
+                      icon: Icon(Icons.camera),
+                    ),
                     labelText: "Enter Admin Number",
                     border: OutlineInputBorder(),
                   ),

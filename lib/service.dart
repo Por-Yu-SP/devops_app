@@ -1,4 +1,7 @@
 import "package:cloud_firestore/cloud_firestore.dart";
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart' show rootBundle;
 
 class Profile {
   String adm = "", password = "";
@@ -23,7 +26,50 @@ class Book {
   );
 }
 
+class ClaudeApi {
+  static const _endpoint = 'https://api.anthropic.com/v1/messages';
+  final String apiKey;
+  final String model;
+
+  const ClaudeApi({
+    required this.apiKey,
+    this.model = 'claude-sonnet-4-5-20250929',
+  });
+
+  Future<String> ask(String prompt, {int maxTokens = 800}) async {
+    final body = {
+      "model": model,
+      "max_tokens": maxTokens,
+      "messages": [
+        {"role": "user", "content": prompt},
+      ],
+    };
+
+    final resp = await http.post(
+      Uri.parse(_endpoint),
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: jsonEncode(body),
+    );
+
+    if (resp.statusCode != 200) {
+      throw Exception('HTTP ${resp.statusCode}: ${resp.body}');
+    }
+
+    final data = jsonDecode(resp.body) as Map<String, dynamic>;
+    final content = (data["content"] as List?) ?? const [];
+    if (content.isEmpty) return '';
+    // Each item is like {"type":"text","text":"..."}
+    return content.map((e) => (e as Map)["text"] ?? '').join("\n").trim();
+  }
+}
+
 class services {
+  static String key = "";
+  static String passtoAI = "";
   static String tappedLocation = "";
   static var adm = "";
   static var password = "";
@@ -47,6 +93,21 @@ class services {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       profilelist.add(Profile(data["adm"], data["password"]));
     }
+  }
+
+  static getkey() async {
+    key = (await rootBundle.loadString('assets/api.txt')).trim();
+  }
+
+  //API KEYYYY
+  static final String _apiKey = key;
+
+  // Model name in one place
+
+  static final _claude = ClaudeApi(apiKey: _apiKey);
+
+  static Future<String> askClaude(String userPrompt, {int maxTokens = 812}) {
+    return _claude.ask(userPrompt, maxTokens: maxTokens);
   }
 
   //check against list for correct profile and password
@@ -80,16 +141,13 @@ class services {
     dr.id;
   }
 
-  static Future<void> extendreserve(int index) async{
-    for (int i=0;i<booklist.length;i++)
-    {
-      if(booklist[i].id==reservedlist[index].id)
-      {
-        QuerySnapshot qs= await book.limit(1).where("id", isEqualTo: booklist[i].id).get();
-        DocumentSnapshot doc =qs.docs[0];
-        await doc.reference.update({
-          "extended":true,
-        });
+  static Future<void> extendreserve(int index) async {
+    for (int i = 0; i < booklist.length; i++) {
+      if (booklist[i].id == reservedlist[index].id) {
+        QuerySnapshot qs =
+            await book.limit(1).where("id", isEqualTo: booklist[i].id).get();
+        DocumentSnapshot doc = qs.docs[0];
+        await doc.reference.update({"extended": true});
       }
     }
     await getAllbook();

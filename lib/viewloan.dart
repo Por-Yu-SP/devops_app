@@ -18,7 +18,31 @@ class _ViewLoanState extends State<ViewLoan> {
     duration: Duration(seconds: 3),
     backgroundColor: const Color.fromARGB(255, 255, 108, 108),
   );
+  final TextEditingController Searchcontrol = TextEditingController();
+  var filter = [];
+  void filterfunc() {
+    String query = Searchcontrol.text.toLowerCase();
+
+    setState(() {
+      if (query.isEmpty) {
+        filter = List.from(
+          services.reservedlist,
+        ); // copy to avoid changing list from changing original
+      } else {
+        filter =
+            services.reservedlist.where((item) {
+              return item.title.toLowerCase().contains(query);
+            }).toList();
+      }
+    });
+  }
+
   @override
+  initState() {
+    super.initState();
+    filter = List.from(services.reservedlist);
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 255, 255, 255),
@@ -41,11 +65,28 @@ class _ViewLoanState extends State<ViewLoan> {
               "Your reservations!",
               style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 30),
+
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: Searchcontrol,
+                decoration: InputDecoration(
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      filterfunc();
+                    },
+                    icon: Icon(Icons.search),
+                  ),
+                  labelText: "Enter Term",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+
             Expanded(
               child: ListView.builder(
                 scrollDirection: Axis.vertical,
-                itemCount: services.reservedlist.length,
+                itemCount: filter.length,
                 itemBuilder: (BuildContext context, int index) {
                   return Center(
                     child: Padding(
@@ -87,11 +128,13 @@ class _ViewLoanState extends State<ViewLoan> {
                                       backgroundColor: Colors.black,
                                     ),
                                     onPressed: () async {
+                                      var theindex = services.reservedlist
+                                          .indexOf(filter[index]);
                                       if (services
-                                              .reservedlist[index]
+                                              .reservedlist[theindex]
                                               .extended !=
                                           true) {
-                                        services.extendreserve(index);
+                                        services.extendreserve(theindex);
                                       } else {
                                         ScaffoldMessenger.of(
                                           context,
@@ -123,21 +166,21 @@ class _ViewLoanState extends State<ViewLoan> {
                             child: Column(
                               children: [
                                 Text(
-                                  "${services.reservedlist[index].title}",
+                                  "${filter[index].title}",
                                   style: TextStyle(
                                     fontSize: 25,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
-                                  "Loaned on ${services.reservedlist[index].date}",
+                                  "Loaned on ${filter[index].date}",
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
-                                  "At ${services.reservedlist[index].location}",
+                                  "At ${filter[index].location}",
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,

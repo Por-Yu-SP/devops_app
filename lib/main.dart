@@ -9,5 +9,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await services.getAllProfile();
+  await services.getkey();
   runApp(MaterialApp(home: SignIn()));
 }
